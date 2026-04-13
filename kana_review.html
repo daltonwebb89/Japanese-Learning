@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Kana Review — ひらがな × カタカナ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #16191f;
+    --card-front: #1c2030;
+    --card-back: #1a2535;
+    --border: rgba(255,255,255,0.07);
+    --accent-h: #4ab3e8;
+    --accent-k: #e8834a;
+    --accent-correct: #4ae8a0;
+    --accent-wrong: #e84a4a;
+    --text-primary: #f0f4f8;
+    --text-muted: rgba(240,244,248,0.45);
+    --text-dim: rgba(240,244,248,0.2);
+    --glow-h: rgba(74,179,232,0.15);
+    --glow-k: rgba(232,131,74,0.15);
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Background grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Floating orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .orb-1 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(74,179,232,0.08) 0%, transparent 70%);
+    top: -100px; left: -100px;
+  }
+  .orb-2 {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(232,131,74,0.07) 0%, transparent 70%);
+    bottom: -80px; right: -80px;
+    animation-delay: -6s;
+  }
+  @keyframes drift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(30px, 20px); }
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 28px 24px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .title-lockup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .title-jp {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+  }
+
+  .title-main {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent-h) 0%, var(--accent-k) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dot { color: var(--text-dim); font-size: 18px; }
+
+  /* MODE CONTROLS */
+  .controls {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 8px 24px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mode-pill {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .mode-btn {
+    padding: 6px 14px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.06em;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .mode-btn.active {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+  }
+
+  .filter-btns {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .filter-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-family: 'Noto Serif JP', serif;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .filter-btn.active {
+    border-color: var(--accent-h);
+    color: var(--accent-h);
+    background: var(--glow-h);
+  }
+
+  /* STATS BAR */
+  .stats {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 12px 24px 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .stat-val.correct { color: var(--accent-correct); }
+  .stat-val.wrong { color: var(--accent-wrong); }
+  .stat-val.remaining { color: var(--text-primary); }
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-h), var(--accent-k));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* FLASHCARD */
+  .card-area {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 8px 24px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .card-scene {
+    width: 100%;
+    perspective: 1200px;
+  }
+
+  .card {
+    width: 100%;
+    min-height: 260px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    min-height: 260px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border: 1px solid var(--border);
+    padding: 32px 24px;
+    gap: 12px;
+    user-select: none;
+  }
+
+  .card-front {
+    background: var(--card-front);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset;
+  }
+
+  .card-back {
+    background: var(--card-back);
+    transform: rotateY(180deg);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset;
+  }
+
+  .card-back.correct-flash {
+    animation: correctPulse 0.5s ease;
+  }
+  .card-back.wrong-flash {
+    animation: wrongPulse 0.5s ease;
+  }
+  @keyframes correctPulse {
+    0% { box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 0 rgba(74,232,160,0.4); }
+    50% { box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 16px rgba(74,232,160,0); }
+    100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  }
+  @keyframes wrongPulse {
+    0% { box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 0 rgba(232,74,74,0.4); }
+    50% { box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 16px rgba(232,74,74,0); }
+    100% { box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  }
+
+  .script-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+  .label-hira {
+    color: var(--accent-h);
+    background: var(--glow-h);
+    border: 1px solid rgba(74,179,232,0.2);
+  }
+  .label-kata {
+    color: var(--accent-k);
+    background: var(--glow-k);
+    border: 1px solid rgba(232,131,74,0.2);
+  }
+
+  .kana-char {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 100px;
+    line-height: 1;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+  .kana-char.hira { color: var(--accent-h); }
+  .kana-char.kata { color: var(--accent-k); }
+
+  .romaji {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .tap-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    animation: blink 2.5s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* Back face content */
+  .back-kana {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 80px;
+    line-height: 1;
+    font-weight: 300;
+  }
+  .back-kana.hira { color: var(--accent-h); }
+  .back-kana.kata { color: var(--accent-k); }
+
+  .back-romaji {
+    font-size: 15px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+  }
+
+  .self-assess {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .assess-btn {
+    padding: 10px 28px;
+    border-radius: 12px;
+    border: 1px solid;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .assess-btn.got-it {
+    border-color: var(--accent-correct);
+    color: var(--accent-correct);
+    background: rgba(74,232,160,0.05);
+  }
+  .assess-btn.got-it:hover, .assess-btn.got-it:active {
+    background: rgba(74,232,160,0.15);
+  }
+  .assess-btn.missed {
+    border-color: var(--accent-wrong);
+    color: var(--accent-wrong);
+    background: rgba(232,74,74,0.05);
+  }
+  .assess-btn.missed:hover, .assess-btn.missed:active {
+    background: rgba(232,74,74,0.15);
+  }
+
+  /* TYPE INPUT AREA */
+  .type-area {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .type-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: 'Noto Serif JP', serif;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  .type-input::placeholder { color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 13px; }
+  .type-input:focus {
+    border-color: rgba(74,179,232,0.4);
+    box-shadow: 0 0 0 3px rgba(74,179,232,0.08);
+  }
+  .type-input.correct-input {
+    border-color: var(--accent-correct);
+    box-shadow: 0 0 0 3px rgba(74,232,160,0.1);
+  }
+  .type-input.wrong-input {
+    border-color: var(--accent-wrong);
+    box-shadow: 0 0 0 3px rgba(232,74,74,0.1);
+    animation: shake 0.3s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .submit-btn {
+    padding: 12px 20px;
+    background: rgba(74,179,232,0.1);
+    border: 1px solid rgba(74,179,232,0.25);
+    border-radius: 12px;
+    color: var(--accent-h);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .submit-btn:hover { background: rgba(74,179,232,0.2); }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-align: center;
+    min-height: 16px;
+    transition: color 0.2s;
+  }
+  .input-hint.correct { color: var(--accent-correct); }
+  .input-hint.wrong { color: var(--accent-wrong); }
+
+  /* NEXT BUTTON */
+  .next-btn {
+    position: relative;
+    z-index: 1;
+    width: calc(100% - 48px);
+    max-width: 492px;
+    padding: 14px;
+    background: linear-gradient(135deg, rgba(74,179,232,0.12), rgba(232,131,74,0.12));
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 4px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .next-btn:hover { background: linear-gradient(135deg, rgba(74,179,232,0.2), rgba(232,131,74,0.2)); }
+  .next-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* COMPLETE SCREEN */
+  #complete {
+    display: none;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 540px;
+    padding: 40px 24px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .complete-emoji { font-size: 64px; animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .complete-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 26px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-h), var(--accent-k));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .score-ring {
+    width: 120px; height: 120px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .ring-bg { stroke: var(--border); fill: none; stroke-width: 6; }
+  .ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 339.3; transition: stroke-dashoffset 1s ease; }
+  .score-pct {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .complete-stats {
+    display: flex;
+    gap: 24px;
+  }
+  .cs { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .cs-val { font-size: 24px; font-weight: 500; }
+  .cs-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; }
+
+  .missed-list {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .missed-title {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .missed-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .missed-item:last-child { border-bottom: none; }
+  .missed-hira { font-family: 'Noto Serif JP', serif; font-size: 22px; color: var(--accent-h); }
+  .missed-kata { font-family: 'Noto Serif JP', serif; font-size: 22px; color: var(--accent-k); }
+  .missed-arrow { color: var(--text-dim); font-size: 14px; }
+  .missed-rom { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+  .restart-btn {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, var(--accent-h), var(--accent-k));
+    border: none;
+    border-radius: 14px;
+    color: #0f1117;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .restart-btn:hover { opacity: 0.9; transform: scale(1.02); }
+
+  /* Card entrance animation */
+  @keyframes cardEnter {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-scene { animation: cardEnter 0.3s ease; }
+
+  /* Spacer */
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="title-lockup">
+    <span class="title-jp">ひらがな</span>
+    <span class="dot">×</span>
+    <span class="title-jp">カタカナ</span>
+  </div>
+  <div class="title-main">Kana Review</div>
+</header>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="mode-pill">
+    <button class="mode-btn active" id="mode-all" onclick="setFilter('all')">ALL</button>
+    <button class="mode-btn" id="mode-vowels" onclick="setFilter('vowels')">あ</button>
+    <button class="mode-btn" id="mode-ka" onclick="setFilter('ka')">か</button>
+    <button class="mode-btn" id="mode-sa" onclick="setFilter('sa')">さ</button>
+    <button class="mode-btn" id="mode-ta" onclick="setFilter('ta')">た</button>
+    <button class="mode-btn" id="mode-na" onclick="setFilter('na')">な</button>
+    <button class="mode-btn" id="mode-ha" onclick="setFilter('ha')">は</button>
+    <button class="mode-btn" id="mode-ma" onclick="setFilter('ma')">ま</button>
+    <button class="mode-btn" id="mode-ya" onclick="setFilter('ya')">や</button>
+    <button class="mode-btn" id="mode-ra" onclick="setFilter('ra')">ら</button>
+    <button class="mode-btn" id="mode-wa" onclick="setFilter('wa')">わ</button>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <span class="stat-val correct" id="stat-correct">0</span>
+    <span class="stat-label">correct</span>
+  </div>
+  <div class="stat">
+    <span class="stat-val wrong" id="stat-wrong">0</span>
+    <span class="stat-label">missed</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+  <div class="stat">
+    <span class="stat-val remaining" id="stat-remaining">—</span>
+    <span class="stat-label">left</span>
+  </div>
+</div>
+
+<!-- Card -->
+<div class="card-area" id="card-area">
+  <div class="card-scene" id="card-scene">
+    <div class="card" id="card" onclick="flipCard()">
+      <div class="card-face card-front" id="card-front">
+        <span class="script-label" id="front-label">HIRAGANA</span>
+        <span class="kana-char" id="front-char">—</span>
+        <div class="tap-hint">↕ tap to reveal</div>
+      </div>
+      <div class="card-face card-back" id="card-back">
+        <span class="script-label" id="back-label">KATAKANA</span>
+        <span class="back-kana" id="back-char">—</span>
+        <span class="back-romaji" id="back-romaji"></span>
+        <div class="self-assess" id="self-assess">
+          <button class="assess-btn got-it" onclick="markCorrect(event)">✓ got it</button>
+          <button class="assess-btn missed" onclick="markWrong(event)">✗ missed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Type input -->
+  <div class="type-area">
+    <div class="input-row">
+      <input class="type-input" id="type-input" type="text"
+        placeholder="type romaji or matching kana…"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        oninput="handleTyping()" onkeydown="handleKeydown(event)">
+      <button class="submit-btn" onclick="submitAnswer()">CHECK</button>
+    </div>
+    <div class="input-hint" id="input-hint"></div>
+  </div>
+
+  <button class="next-btn" id="next-btn" onclick="nextCard()">
+    NEXT CARD →
+  </button>
+</div>
+
+<!-- Complete screen -->
+<div id="complete" style="display:none; flex-direction:column; align-items:center;">
+  <div class="complete-emoji">🎌</div>
+  <div class="complete-title">Round Complete!</div>
+
+  <div class="score-ring">
+    <svg viewBox="0 0 120 120">
+      <circle class="ring-bg" cx="60" cy="60" r="54"/>
+      <circle class="ring-fill" id="score-ring-fill" cx="60" cy="60" r="54" stroke="url(#scoreGrad)" stroke-dashoffset="339.3"/>
+      <defs>
+        <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#4ab3e8"/>
+          <stop offset="100%" stop-color="#e8834a"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <span class="score-pct" id="score-pct">0%</span>
+  </div>
+
+  <div class="complete-stats">
+    <div class="cs">
+      <span class="cs-val" id="final-correct" style="color:var(--accent-correct)">0</span>
+      <span class="cs-label">correct</span>
+    </div>
+    <div class="cs">
+      <span class="cs-val" id="final-wrong" style="color:var(--accent-wrong)">0</span>
+      <span class="cs-label">missed</span>
+    </div>
+    <div class="cs">
+      <span class="cs-val" id="final-total" style="color:var(--text-muted)">0</span>
+      <span class="cs-label">total</span>
+    </div>
+  </div>
+
+  <div class="missed-list" id="missed-list" style="display:none">
+    <div class="missed-title">Review these</div>
+    <div id="missed-items"></div>
+  </div>
+
+  <button class="restart-btn" onclick="restart()">REVIEW AGAIN →</button>
+  <div class="spacer"></div>
+</div>
+
+<script>
+// ===== KANA DATA =====
+// [hiragana, katakana, romaji, group]
+const ALL_KANA = [
+  // Vowels
+  ['あ','ア','a','vowels'], ['い','イ','i','vowels'], ['う','ウ','u','vowels'],
+  ['え','エ','e','vowels'], ['お','オ','o','vowels'],
+  // Ka row
+  ['か','カ','ka','ka'], ['き','キ','ki','ka'], ['く','ク','ku','ka'],
+  ['け','ケ','ke','ka'], ['こ','コ','ko','ka'],
+  // Sa row
+  ['さ','サ','sa','sa'], ['し','シ','shi','sa'], ['す','ス','su','sa'],
+  ['せ','セ','se','sa'], ['そ','ソ','so','sa'],
+  // Ta row
+  ['た','タ','ta','ta'], ['ち','チ','chi','ta'], ['つ','ツ','tsu','ta'],
+  ['て','テ','te','ta'], ['と','ト','to','ta'],
+  // Na row
+  ['な','ナ','na','na'], ['に','ニ','ni','na'], ['ぬ','ヌ','nu','na'],
+  ['ね','ネ','ne','na'], ['の','ノ','no','na'],
+  // Ha row
+  ['は','ハ','ha','ha'], ['ひ','ヒ','hi','ha'], ['ふ','フ','fu','ha'],
+  ['へ','ヘ','he','ha'], ['ほ','ホ','ho','ha'],
+  // Ma row
+  ['ま','マ','ma','ma'], ['み','ミ','mi','ma'], ['む','ム','mu','ma'],
+  ['め','メ','me','ma'], ['も','モ','mo','ma'],
+  // Ya row
+  ['や','ヤ','ya','ya'], ['ゆ','ユ','yu','ya'], ['よ','ヨ','yo','ya'],
+  // Ra row
+  ['ら','ラ','ra','ra'], ['り','リ','ri','ra'], ['る','ル','ru','ra'],
+  ['れ','レ','re','ra'], ['ろ','ロ','ro','ra'],
+  // Wa row
+  ['わ','ワ','wa','wa'], ['を','ヲ','wo','wa'], ['ん','ン','n','wa'],
+];
+
+// All accepted answers per kana (romaji variants)
+const ROMAJI_VARIANTS = {
+  'shi': ['shi','si'], 'chi': ['chi','ti'], 'tsu': ['tsu','tu'],
+  'fu': ['fu','hu'], 'ji': ['ji','zi'], 'wo': ['wo','o'],
+  'n': ['n','nn'],
+};
+
+function getAccepted(romaji) {
+  return ROMAJI_VARIANTS[romaji] || [romaji];
+}
+
+// ===== STATE =====
+let deck = [];
+let currentIdx = 0;
+let currentCard = null;
+let isFlipped = false;
+let answered = false;
+let correctCount = 0;
+let wrongCount = 0;
+let missedCards = [];
+let currentFilter = 'all';
+let showingFront = 'hira'; // 'hira' or 'kata' — randomized per card
+
+// ===== FILTER =====
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + filter).classList.add('active');
+  restart();
+}
+
+function buildDeck(filter) {
+  let cards = filter === 'all' ? [...ALL_KANA] : ALL_KANA.filter(k => k[3] === filter);
+  // Shuffle
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
+
+// ===== CARD RENDERING =====
+function renderCard(cardData) {
+  currentCard = cardData;
+  isFlipped = false;
+  answered = false;
+
+  // Randomize which script shows on front
+  showingFront = Math.random() < 0.5 ? 'hira' : 'kata';
+
+  const frontChar = document.getElementById('front-char');
+  const frontLabel = document.getElementById('front-label');
+  const backChar = document.getElementById('back-char');
+  const backLabel = document.getElementById('back-label');
+  const backRomaji = document.getElementById('back-romaji');
+
+  if (showingFront === 'hira') {
+    frontLabel.textContent = 'HIRAGANA';
+    frontLabel.className = 'script-label label-hira';
+    frontChar.textContent = cardData[0];
+    frontChar.className = 'kana-char hira';
+    backLabel.textContent = 'KATAKANA';
+    backLabel.className = 'script-label label-kata';
+    backChar.textContent = cardData[1];
+    backChar.className = 'back-kana kata';
+  } else {
+    frontLabel.textContent = 'KATAKANA';
+    frontLabel.className = 'script-label label-kata';
+    frontChar.textContent = cardData[1];
+    frontChar.className = 'kana-char kata';
+    backLabel.textContent = 'HIRAGANA';
+    backLabel.className = 'script-label label-hira';
+    backChar.textContent = cardData[0];
+    backChar.className = 'back-kana hira';
+  }
+
+  backRomaji.textContent = cardData[2];
+
+  // Reset card
+  const card = document.getElementById('card');
+  card.classList.remove('flipped');
+  document.getElementById('card-back').classList.remove('correct-flash','wrong-flash');
+  document.getElementById('self-assess').style.display = 'flex';
+
+  // Reset input
+  const input = document.getElementById('type-input');
+  input.value = '';
+  input.className = 'type-input';
+  document.getElementById('input-hint').textContent = '';
+  document.getElementById('input-hint').className = 'input-hint';
+  document.getElementById('next-btn').disabled = false;
+
+  updateStats();
+}
+
+function flipCard() {
+  if (answered) return;
+  isFlipped = !isFlipped;
+  document.getElementById('card').classList.toggle('flipped', isFlipped);
+}
+
+// ===== ANSWER CHECKING =====
+function checkAnswer(raw) {
+  const input = raw.trim().toLowerCase();
+  if (!input) return null;
+
+  const romaji = currentCard[2];
+  const hiragana = currentCard[0];
+  const katakana = currentCard[1];
+
+  // Check romaji (with variants)
+  const accepted = getAccepted(romaji);
+  if (accepted.includes(input)) return true;
+
+  // Check if they typed the matching kana
+  // Front is hira -> they type kata, or front is kata -> they type hira
+  if (showingFront === 'hira' && input === katakana) return true;
+  if (showingFront === 'kata' && input === hiragana) return true;
+
+  // Also accept the opposite script just in case
+  if (input === hiragana || input === katakana) return true;
+
+  return false;
+}
+
+function handleTyping() {
+  const input = document.getElementById('type-input');
+  input.classList.remove('correct-input', 'wrong-input');
+  document.getElementById('input-hint').textContent = '';
+  document.getElementById('input-hint').className = 'input-hint';
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter') {
+    if (answered) {
+      nextCard();
+    } else {
+      submitAnswer();
+    }
+  }
+}
+
+function submitAnswer() {
+  if (answered) return;
+  const raw = document.getElementById('type-input').value;
+  if (!raw.trim()) return;
+
+  const correct = checkAnswer(raw);
+  const input = document.getElementById('type-input');
+  const hint = document.getElementById('input-hint');
+
+  if (correct) {
+    input.classList.add('correct-input');
+    hint.textContent = '✓ correct!';
+    hint.className = 'input-hint correct';
+    markCorrectSilent();
+    // Auto-flip to show the answer
+    if (!isFlipped) {
+      isFlipped = true;
+      document.getElementById('card').classList.add('flipped');
+      document.getElementById('card-back').classList.add('correct-flash');
+    }
+    document.getElementById('self-assess').style.display = 'none';
+    answered = true;
+  } else {
+    input.classList.add('wrong-input');
+    const romaji = currentCard[2];
+    hint.textContent = `✗  answer: ${romaji}  (${currentCard[0]} · ${currentCard[1]})`;
+    hint.className = 'input-hint wrong';
+    // Show answer
+    if (!isFlipped) {
+      isFlipped = true;
+      document.getElementById('card').classList.add('flipped');
+      document.getElementById('card-back').classList.add('wrong-flash');
+    }
+    document.getElementById('self-assess').style.display = 'none';
+    markWrongSilent();
+    answered = true;
+  }
+}
+
+// Called from self-assess buttons
+function markCorrect(e) {
+  e.stopPropagation();
+  if (answered) return;
+  markCorrectSilent();
+  answered = true;
+  document.getElementById('self-assess').style.display = 'none';
+  document.getElementById('card-back').classList.add('correct-flash');
+}
+
+function markWrong(e) {
+  e.stopPropagation();
+  if (answered) return;
+  markWrongSilent();
+  answered = true;
+  document.getElementById('self-assess').style.display = 'none';
+  document.getElementById('card-back').classList.add('wrong-flash');
+}
+
+function markCorrectSilent() {
+  correctCount++;
+  updateStats();
+}
+
+function markWrongSilent() {
+  wrongCount++;
+  missedCards.push(currentCard);
+  updateStats();
+}
+
+// ===== NAVIGATION =====
+function nextCard() {
+  // If card wasn't flipped/answered yet, count as skipped (neutral)
+  currentIdx++;
+  if (currentIdx >= deck.length) {
+    showComplete();
+    return;
+  }
+
+  // Animate card swap
+  const scene = document.getElementById('card-scene');
+  scene.style.animation = 'none';
+  scene.offsetHeight; // force reflow
+  scene.style.animation = 'cardEnter 0.3s ease';
+
+  renderCard(deck[currentIdx]);
+}
+
+function updateStats() {
+  document.getElementById('stat-correct').textContent = correctCount;
+  document.getElementById('stat-wrong').textContent = wrongCount;
+  const remaining = deck.length - currentIdx;
+  document.getElementById('stat-remaining').textContent = remaining;
+  const done = currentIdx;
+  const pct = deck.length > 0 ? (done / deck.length) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ===== COMPLETE =====
+function showComplete() {
+  document.getElementById('card-area').style.display = 'none';
+  const complete = document.getElementById('complete');
+  complete.style.display = 'flex';
+
+  const total = correctCount + wrongCount;
+  const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+  document.getElementById('score-pct').textContent = pct + '%';
+  document.getElementById('final-correct').textContent = correctCount;
+  document.getElementById('final-wrong').textContent = wrongCount;
+  document.getElementById('final-total').textContent = total;
+
+  // Animate ring
+  const circumference = 339.3;
+  const offset = circumference - (pct / 100) * circumference;
+  setTimeout(() => {
+    document.getElementById('score-ring-fill').style.strokeDashoffset = offset;
+  }, 100);
+
+  // Missed cards
+  if (missedCards.length > 0) {
+    const list = document.getElementById('missed-list');
+    list.style.display = 'flex';
+    const items = document.getElementById('missed-items');
+    items.innerHTML = missedCards.map(c =>
+      `<div class="missed-item">
+        <span class="missed-hira">${c[0]}</span>
+        <span class="missed-arrow">↔</span>
+        <span class="missed-kata">${c[1]}</span>
+        <span class="missed-rom">${c[2]}</span>
+      </div>`
+    ).join('');
+  }
+}
+
+function restart() {
+  correctCount = 0;
+  wrongCount = 0;
+  missedCards = [];
+  currentIdx = 0;
+  deck = buildDeck(currentFilter);
+
+  document.getElementById('card-area').style.display = 'flex';
+  document.getElementById('complete').style.display = 'none';
+  document.getElementById('missed-list').style.display = 'none';
+  document.getElementById('missed-items').innerHTML = '';
+
+  renderCard(deck[0]);
+}
+
+// ===== INIT =====
+restart();
+</script>
+</body>
+</html>
